@@ -9,10 +9,10 @@ class Database {
   private $conn;
 
   public function __construct() {
-    $this->host = 'localhost';
-    $this->user = 'root';
-    $this->password = '';
-    $this->dbname = 'mensapp';
+    $this->host = 'your_host';
+    $this->user = 'your_database_user';
+    $this->password = 'your_database_password';
+    $this->dbname = 'your_database_name';
 
     $dsn = "mysql:host={$this->host};dbname={$this->dbname};charset=utf8mb4";
 
