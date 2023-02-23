@@ -1,0 +1,20 @@
+# Permite que cualquier dominio pueda acceder a la API
+Header set Access-Control-Allow-Origin "*"
+
+# Especifica que los encabezados 'Authorization' y 'Content-Type' están permitidos en las peticiones
+Header set Access-Control-Allow-Headers "Authorization, Content-Type"
+
+# Especifica los métodos HTTP permitidos
+Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE"
+
+# Habilita la reescritura de URLs
+RewriteEngine On
+
+# Condición para que la regla sólo se aplique a peticiones que no sean para archivos existentes
+RewriteCond %{REQUEST_FILENAME} !-f
+
+# Redirige todas las peticiones a 'index.php'
+# NC indica que no distingue entre mayúsculas y minúsculas
+# L indica que ésta debe ser la última regla en ser aplicada
+# QSA indica que cualquier parámetro de consulta en la URL original debe ser pasado a 'index.php'
+RewriteRule ^(.*)$ index.php [NC,L,QSA]
