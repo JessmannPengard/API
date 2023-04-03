@@ -1,2 +1,3 @@
 RewriteEngine On
 RewriteRule ^user(.*)$ controllers/UserController.php$1 [L]
+RewriteRule ^message(.*)$ controllers/MessageController.php$1 [L]

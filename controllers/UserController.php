@@ -37,7 +37,7 @@ if ($method == 'POST' && isset($data['username']) && isset($data['email']) && is
     $registered = $user->register($data['username'], $data['email'], $data['password']);
 
     if ($registered) {
-        echo json_encode(array('mensaje' => 'Usuario registrado correctamente'));
+        echo json_encode(array('message' => 'Usuario registrado correctamente'));
     } else {
         http_response_code(400);
         echo json_encode(array('error' => 'El correo electrónico ya está registrado'));
@@ -58,7 +58,7 @@ if ($method == 'PUT' && isset($data['jwt']) && isset($data['username']) && isset
         $modified = $user->modify($user_id, $data['username'], $data['email'], $data['password']);
 
         if ($modified) {
-            echo json_encode(array('mensaje' => 'Usuario modificado correctamente'));
+            echo json_encode(array('message' => 'Usuario modificado correctamente'));
         } else {
             http_response_code(400);
             echo json_encode(array('error' => 'El correo electrónico ya está registrado por otro usuario'));
@@ -83,7 +83,7 @@ if ($method == 'DELETE' && isset($data['jwt'])) {
         $deleted = $user->delete($user_id);
 
         if ($deleted) {
-            echo json_encode(array('mensaje' => 'Usuario eliminado correctamente'));
+            echo json_encode(array('message' => 'Usuario eliminado correctamente'));
         } else {
             http_response_code(400);
             echo json_encode(array('error' => 'Error al eliminar el usuario'));

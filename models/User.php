@@ -69,7 +69,7 @@ class User
         return $jwt;
     }
 
-    // Función para modificar un usuario
+    // Modificar un usuario
     function modify($user_id, $username, $email, $password)
     {
         // Comprobar si el correo electrónico ya está registrado por otro usuario
@@ -100,7 +100,7 @@ class User
         return true;
     }
 
-    // Función para eliminar un usuario
+    // Eliminar un usuario
     function delete($user_id)
     {
         // Eliminar el usuario de la base de datos
@@ -109,6 +109,18 @@ class User
 
         // El usuario se ha eliminado correctamente
         return true;
+    }
+
+    // Comprobar si un usuario existe
+    function exist($user_id)
+    {
+        $stmt = $this->conn->prepare('SELECT COUNT(*) FROM Users WHERE id = ?');
+        $stmt->execute(array($user_id));
+        if ($stmt->fetchColumn() == 0) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
 }
