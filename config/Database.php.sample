@@ -29,6 +29,15 @@ class Database {
   public function getConnection() {
     return $this->conn;
   }
+
+  // Método para cerrar la conexión
+  public function closeConnection()
+  {
+    global $pdo, $stmt;
+    $stmt->closeCursor();
+    $stmt = null;
+    $pdo = null;
+  }
 }
 
 ?>

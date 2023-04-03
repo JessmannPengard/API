@@ -1,95 +1,103 @@
 <?php
 
-require_once(__DIR__ . "../../config/Database.php");
-require_once(__DIR__ . "../../models/Orm.php");
-require_once(__DIR__ . "../../models/User.php");
+require_once("../config/Database.php");
+require_once("../models/User.php");
+require_once("../vendor/autoload.php");
 
-// Obtener el método HTTP y los datos de la solicitud
-$http_method = $_SERVER['REQUEST_METHOD'];
-$input_data = json_decode(file_get_contents('php://input'), true);
-$url = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : "";
-$url = explode("/", $url);
-$id = isset($url[3]) ? $url[3] : "";
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
-// Inicializar la conexión a la base de datos
-$db = new Database();
-$user = new User($db);
+// Configurar la respuesta HTTP
+header('Content-Type: application/json');
 
-// Definir la respuesta por defecto
-$response = [
-    'status' => false,
-    'message' => 'Método no soportado'
-];
+// Obtener el método de la solicitud HTTP
+$method = $_SERVER['REQUEST_METHOD'];
 
-// Manejar las diferentes operaciones CRUD
-switch ($http_method) {
-    case 'GET':
-        // Consultar por id
-        if ($id != "") {
-            $data = $user->getById($id);
-            if ($data) {
-                $response['status'] = true;
-                $response['data'] = $data;
-                $response['message'] = 'Usuario devuelto';
-            } else {
-                $response['message'] = 'Usuario no encontrado';
-            }
-        // Consultar todos
-        } else {
-            $data = $user->getAll();
-            $response['status'] = true;
-            $response['data'] = $data;
-            $response['message'] = 'Listado de usuarios devuelto';
-        }
-        break;
-    case 'POST':
-        // Crear usuario nuevo
-        $username = $input_data['username'];
-        $email = $input_data['email'];
-        $password = $input_data['password'];
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $values = array();
-        $values['username'] = $username;
-        $values['email'] = $email;
-        $values['password'] = $hashed_password;
-        $data = $user->add($values);
-        $response['status'] = true;
-        $response['message'] = 'Usuario creado exitosamente';
-        $response['data'] = $data;
-        break;
-    case 'PUT':
-        // Actualizar usuario
-        if ($id != "") {
-            $username = $input_data['username'];
-            $email = $input_data['email'];
-            $password = $input_data['password'];
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $values = array();
-            $values['username'] = $username;
-            $values['email'] = $email;
-            $values['password'] = $hashed_password;
-            $data = $user->update($id, $values);
-            $response['status'] = true;
-            $response['message'] = 'Usuario actualizado exitosamente';
-            $response['data'] = $data;
-        } else {
-            $response['message'] = 'ID de usuario no especificado';
-        }
-        break;
-    case 'DELETE':
-        //Borrar usuario
-        if ($id != "") {
-            $user->delete($id);
-            $response['status'] = true;
-            $response['message'] = 'Usuario eliminado exitosamente';
-        } else {
-            $response['message'] = 'ID de usuario no especificado';
-        }
-        break;
+// Obtener los datos de la solicitud HTTP
+$data = json_decode(file_get_contents('php://input'), true);
+
+// Manejar el inicio de sesión
+if ($method == 'GET' && isset($data['email']) && isset($data['password'])) {
+    $db = new Database;
+    $user = new User($db);
+    $jwt = $user->login($data['email'], $data['password']);
+
+    if ($jwt) {
+        echo json_encode(array('jwt' => $jwt));
+    } else {
+        http_response_code(401);
+        echo json_encode(array('error' => 'Credenciales inválidas'));
+    }
 }
 
-// Enviar la respuesta como JSON
-header('Content-type: application/json');
-echo json_encode($response);
+// Manejar el registro de usuario
+if ($method == 'POST' && isset($data['username']) && isset($data['email']) && isset($data['password'])) {
+    $db = new Database;
+    $user = new User($db);
+    $registered = $user->register($data['username'], $data['email'], $data['password']);
+
+    if ($registered) {
+        echo json_encode(array('mensaje' => 'Usuario registrado correctamente'));
+    } else {
+        http_response_code(400);
+        echo json_encode(array('error' => 'El correo electrónico ya está registrado'));
+    }
+}
+
+// Manejar la modificación de usuario
+if ($method == 'PUT' && isset($data['jwt']) && isset($data['username']) && isset($data['email']) && isset($data['password'])) {
+    try {
+        // Verificar si el token JWT es válido y obtener el ID del usuario
+        $jwt = $data['jwt'];
+        $decoded = JWT::decode($jwt, new Key(API_KEY, 'HS256'));
+        $user_id = $decoded->user_id;
+
+        // Modificar el usuario en la base de datos
+        $db = new Database;
+        $user = new User($db);
+        $modified = $user->modify($user_id, $data['username'], $data['email'], $data['password']);
+
+        if ($modified) {
+            echo json_encode(array('mensaje' => 'Usuario modificado correctamente'));
+        } else {
+            http_response_code(400);
+            echo json_encode(array('error' => 'El correo electrónico ya está registrado por otro usuario'));
+        }
+    } catch (Exception $e) {
+        http_response_code(401);
+        echo json_encode(array('error' => 'Token JWT inválido'));
+    }
+}
+
+// Manejar la eliminación de usuario
+if ($method == 'DELETE' && isset($data['jwt'])) {
+    try {
+        // Verificar si el token JWT es válido y obtener el ID del usuario
+        $jwt = $data['jwt'];
+        $decoded = JWT::decode($jwt, new Key(API_KEY, 'HS256'));
+        $user_id = $decoded->user_id;
+
+        // Eliminar el usuario de la base de datos
+        $db = new Database;
+        $user = new User($db);
+        $deleted = $user->delete($user_id);
+
+        if ($deleted) {
+            echo json_encode(array('mensaje' => 'Usuario eliminado correctamente'));
+        } else {
+            http_response_code(400);
+            echo json_encode(array('error' => 'Error al eliminar el usuario'));
+        }
+    } catch (Exception $e) {
+        http_response_code(401);
+        echo json_encode(array('error' => 'Token JWT inválido'));
+    }
+}
+
+// Si no se reconoce la solicitud HTTP
+if (!in_array($method, ["GET", "POST", "PUT", "DELETE"])) {
+    http_response_code(400);
+    echo json_encode(array('error' => 'Solicitud HTTP inválida'));
+}
 
 ?>
